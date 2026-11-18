@@ -14,7 +14,7 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv("voca_3000.csv", encoding="utf-8")
+        df = pd.read_csv("Voca_3000.csv", encoding="utf-8")
         return df
     except Exception as e:
         st.error(f"CSV 파일을 불러오는 중 오류가 발생했습니다: {e}")
