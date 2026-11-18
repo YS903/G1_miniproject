@@ -10,7 +10,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# 데이터 로드 함수 (voca_3000.csv 파일 사용, 2열: 영단어, 4열: 뜻)
+# 데이터 로드 함수 (Voca_3000.csv 파일 사용, 2열: 영단어, 4열: 뜻)
 @st.cache_data
 def load_data():
     try:
