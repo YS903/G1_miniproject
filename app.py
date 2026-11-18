@@ -76,28 +76,22 @@ if df is not None:
 
     elif menu == "📖 예문 학습 (Example Sentences)":
         st.header("📖 문맥 속 단어 학습")
-        ex_col = None
-        for col in df.columns:
-            if "example" in col.lower() or "예문" in col:
-                ex_col = col
-                break
+        st.write("단어와 뜻을 활용해 자동으로 생성된 예문입니다.")
+
+        # 버튼을 누르거나 처음 들어왔을 때 새로운 단어 선택
+        if "ex_word" not in st.session_state or st.button("🔄 다른 예문 보기"):
+            sample_row = df.sample(1).iloc[0]
+            st.session_state.ex_word = str(sample_row[word_col]).strip()
+            st.session_state.ex_meaning = str(sample_row[meaning_col]).strip()
+
+        word = st.session_state.ex_word
+        meaning = st.session_state.ex_meaning
+
+        st.markdown(f"### 🎯 단어: **{word}** ({meaning})")
         
-        if ex_col is not None:
-            sample_df = df.dropna(subset=[ex_col]).sample(1).iloc[0]
-            word = sample_df[word_col]
-            meaning = sample_df[meaning_col]
-            example = sample_df[ex_col]
-
-            st.markdown(f"### 🎯 단어: **{word}** ({meaning})")
-            highlighted_example = str(example).replace(str(word), f"**<span style='color:red;'>{word}</span>**")
-            st.markdown(f"> **예문:** {highlighted_example}", unsafe_allow_html=True)
-
-            if st.button("다른 예문 보기"):
-                st.rerun()
-        else:
-            st.warning("CSV 파일에 예문 컬럼이 없습니다. 단어와 뜻만 표시합니다.")
-            sample_df = df.sample(1).iloc[0]
-            st.markdown(f"### 🎯 단어: **{sample_df[word_col]}** ({sample_df[meaning_col]})")
+        # 파일에 예문이 없으므로 단어를 포함한 문장을 자동 생성하여 표시
+        auto_example = f"This is an example sentence using the word **{word}** ({meaning})."
+        st.markdown(f"> **자동 생성 예문:** {auto_example}")
 
     elif menu == "❓ 객관식 퀴즈 (Multiple-Choice)":
         st.header("❓ 어휘 객관식 퀴즈")
@@ -121,15 +115,27 @@ if df is not None:
 
     elif menu == "⏱️ 타임어택 배틀 (Timed Battle)":
         st.header("⏱️ 타임어택 스피드 배틀")
-        if "battle_started" not in st.session_state:
-            st.session_state.battle_started = False
+        st.write("제한 시간(10초) 동안 최대한 많은 문제를 맞춰보세요!")
+
+        # 세션 상태 초기화
+        if "battle_active" not in st.session_state:
+            st.session_state.battle_active = False
             st.session_state.battle_score = 0
 
-        if not st.session_state.battle_started:
+        # 게임 시작 버튼
+        if not st.session_state.battle_active:
             if st.button("🚀 배틀 시작!"):
-                st.session_state.battle_started = True
+                st.session_state.battle_active = True
                 st.session_state.battle_start_time = time.time()
                 st.session_state.battle_score = 0
+                # 첫 문제 세팅
+                row = df.sample(1).iloc[0]
+                st.session_state.b_word = str(row[word_col])
+                st.session_state.b_correct = str(row[meaning_col])
+                w_rows = df[df[word_col] != st.session_state.b_word].sample(3)
+                opts = list(w_rows[meaning_col].values) + [st.session_state.b_correct]
+                random.shuffle(opts)
+                st.session_state.b_opts = opts
                 st.rerun()
         else:
             elapsed = time.time() - st.session_state.battle_start_time
@@ -137,15 +143,8 @@ if df is not None:
 
             if remaining > 0:
                 st.metric(label="⏳ 남은 시간", value=f"{remaining}초")
-                if "b_word" not in st.session_state:
-                    row = df.sample(1).iloc[0]
-                    st.session_state.b_word = row[word_col]
-                    st.session_state.b_correct = row[meaning_col]
-                    w_rows = df[df[word_col] != st.session_state.b_word].sample(3)
-                    opts = list(w_rows[meaning_col].values) + [st.session_state.b_correct]
-                    random.shuffle(opts)
-                    st.session_state.b_opts = opts
-
+                st.markdown(f"### 현재 점수: 🏆 {st.session_state.battle_score}점")
+                
                 st.write(f"단어: **{st.session_state.b_word}**")
                 ans = st.radio("뜻을 고르세요:", st.session_state.b_opts, key="battle_radio")
 
@@ -154,15 +153,25 @@ if df is not None:
                         st.session_state.battle_score += 1
                         st.success("정답! +1점")
                     else:
-                        st.error("오답!")
-                    del st.session_state["b_word"]
+                        st.error(f"오답! 정답은 '{st.session_state.b_correct}' 였습니다.")
+                    
+                    # 바로 다음 문제 출제
+                    row = df.sample(1).iloc[0]
+                    st.session_state.b_word = str(row[word_col])
+                    st.session_state.b_correct = str(row[meaning_col])
+                    w_rows = df[df[word_col] != st.session_state.b_word].sample(3)
+                    opts = list(w_rows[meaning_col].values) + [st.session_state.b_correct]
+                    random.shuffle(opts)
+                    st.session_state.b_opts = opts
                     st.rerun()
+                
+                # 실시간으로 화면이 갱신되도록 1초 대기 후 리프레시
+                time.sleep(1)
+                st.rerun()
             else:
                 st.warning(f"⏰ 시간이 종료되었습니다! 최종 점수: **{st.session_state.battle_score}점**")
                 if st.button("🔄 다시 도전하기"):
-                    st.session_state.battle_started = False
-                    if "b_word" in st.session_state:
-                        del st.session_state["b_word"]
+                    st.session_state.battle_active = False
                     st.rerun()
 else:
     st.warning("데이터를 로드할 수 없습니다.")
