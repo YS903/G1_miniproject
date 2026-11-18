@@ -23,10 +23,9 @@ def load_data():
 df = load_data()
 
 if df is not None:
-    # 컬럼 이름 공백 제거 및 위치(0번째: 단어, 1번째: 뜻)로 안전하게 지정
-    df.columns = df.columns.str.strip()
-    word_col = df.columns[0]   # 첫 번째 열을 영단어로 지정
-    meaning_col = df.columns[1] # 두 번째 열을 뜻으로 지정
+    # 2열(인덱스 1)을 영단어, 4열(인덱스 3)을 뜻으로 정확히 지정
+    word_col = df.columns[1]   # 2번째 열 (영단어)
+    meaning_col = df.columns[3] # 4번째 열 (뜻)
     
     st.sidebar.title("📚 G1 Vocabulary App")
     st.sidebar.markdown("중학교 1학년 필수 영단어 마스터!")
