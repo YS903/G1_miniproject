@@ -12,23 +12,26 @@ What should learners practice or learn? 뜻, 철자
 
 ## 4. What We Updated
 Write what you changed from the first version. Use lists.
-음성 파일 수정
-단어 리스트 확장
-폰 작동
-힌트 추가
-배경음악 추가
+Expanded the vocabulary list to 3,000 essential English words.
+Improved audio functions and sound effects.
+Added background music.
+Added hints to help learners answer questions.
+Improved the mobile interface for better accessibility.
+Enhanced the game system with stages, boss battles, and rewards.
 
 ## 5. Main Features
-- word typing practice
-- example sentences with lighligted target words
-- multiple-choice questions
-- timed vocabulary battles
+Three-step vocabulary learning: Flashcards, multiple-choice questions, and spelling practice.
+Example sentences: Learn vocabulary in context through example sentences.
+RPG-style learning system: Progress through 100 stages and challenge 10 boss monsters.
+Wrong Wordbook: Review incorrectly answered vocabulary.
+Audio support: Listen to English word pronunciation and use background music and sound effectss
 
 ## 6. Vocabulary Data
-Explain how the app uses the CSV file. 앱에 사용된 데이터 파일(csv) 링크도 꼭 포함시킬 것.
+The app uses the 3,000 essential English words from the curriculum vocabulary dataset. Each word includes its English spelling, Korean meaning, word variations, difficulty level, and example sentence..
+[Voca_3000.csv](https://github.com/user-attachments/files/35013428/Voca_3000.csv)
 
 ## 7. What We Learned Through This Group Activity
-Write 2–4 sentences.
+Through this group activity, we learned how to improve an existing vocabulary app and organize a large vocabulary dataset. We also experienced how to connect vocabulary data to an interactive learning application. By working together, we improved our collaboration and problem-solving skills.
 
 ## 8. Streamlit App
 [Open our Streamlit app](YOUR_STREAMLIT_URL)
