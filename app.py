@@ -17,14 +17,16 @@ def load_data():
         df = pd.read_csv("Voca_3000.csv", encoding="utf-8")
         return df
     except Exception as e:
-        st.error(f"CSV 파일을 불러오는 중 오류가 발생했습니다: {e}. `voca_3000.csv` 파일 위치를 확인하세요.")
+        st.error(f"CSV 파일을 불러오는 중 오류가 발생했습니다: {e}")
         return None
 
 df = load_data()
 
 if df is not None:
-    # 컬럼 이름 공백 제거 (혹시 모를 오류 방지)
+    # 컬럼 이름 공백 제거 및 위치(0번째: 단어, 1번째: 뜻)로 안전하게 지정
     df.columns = df.columns.str.strip()
+    word_col = df.columns[0]   # 첫 번째 열을 영단어로 지정
+    meaning_col = df.columns[1] # 두 번째 열을 뜻으로 지정
     
     st.sidebar.title("📚 G1 Vocabulary App")
     st.sidebar.markdown("중학교 1학년 필수 영단어 마스터!")
@@ -53,8 +55,8 @@ if df is not None:
         
         if "typing_word" not in st.session_state or st.button("🔄 다른 단어 뽑기"):
             rand_row = df.sample(1).iloc[0]
-            st.session_state.typing_word = str(rand_row["Word"]).strip()
-            st.session_state.typing_meaning = str(rand_row["Korean meaning"]).strip()
+            st.session_state.typing_word = str(rand_row[word_col]).strip()
+            st.session_state.typing_meaning = str(rand_row[meaning_col]).strip()
             st.session_state.typing_hint = st.session_state.typing_word[0] + " _ " * (len(st.session_state.typing_word) - 1)
 
         target_word = st.session_state.typing_word
@@ -75,17 +77,16 @@ if df is not None:
 
     elif menu == "📖 예문 학습 (Example Sentences)":
         st.header("📖 문맥 속 단어 학습")
-        # 예문 컬럼이 존재하는지 확인 (예: 'Example sentence' 또는 'Example')
         ex_col = None
         for col in df.columns:
-            if "example" in col.lower():
+            if "example" in col.lower() or "예문" in col:
                 ex_col = col
                 break
         
         if ex_col is not None:
             sample_df = df.dropna(subset=[ex_col]).sample(1).iloc[0]
-            word = sample_df["Word"]
-            meaning = sample_df["Korean meaning"]
+            word = sample_df[word_col]
+            meaning = sample_df[meaning_col]
             example = sample_df[ex_col]
 
             st.markdown(f"### 🎯 단어: **{word}** ({meaning})")
@@ -97,16 +98,16 @@ if df is not None:
         else:
             st.warning("CSV 파일에 예문 컬럼이 없습니다. 단어와 뜻만 표시합니다.")
             sample_df = df.sample(1).iloc[0]
-            st.markdown(f"### 🎯 단어: **{sample_df['Word']}** ({sample_df['Korean meaning']})")
+            st.markdown(f"### 🎯 단어: **{sample_df[word_col]}** ({sample_df[meaning_col]})")
 
     elif menu == "❓ 객관식 퀴즈 (Multiple-Choice)":
         st.header("❓ 어휘 객관식 퀴즈")
         if "quiz_word" not in st.session_state or st.button("🔄 다음 문제 출제"):
             correct_row = df.sample(1).iloc[0]
-            st.session_state.q_word = str(correct_row["Word"])
-            st.session_state.q_correct = str(correct_row["Korean meaning"])
-            wrong_rows = df[df["Word"] != st.session_state.q_word].sample(3)
-            options = list(wrong_rows["Korean meaning"].values) + [st.session_state.q_correct]
+            st.session_state.q_word = str(correct_row[word_col])
+            st.session_state.q_correct = str(correct_row[meaning_col])
+            wrong_rows = df[df[word_col] != st.session_state.q_word].sample(3)
+            options = list(wrong_rows[meaning_col].values) + [st.session_state.q_correct]
             random.shuffle(options)
             st.session_state.q_options = options
 
@@ -139,10 +140,10 @@ if df is not None:
                 st.metric(label="⏳ 남은 시간", value=f"{remaining}초")
                 if "b_word" not in st.session_state:
                     row = df.sample(1).iloc[0]
-                    st.session_state.b_word = row["Word"]
-                    st.session_state.b_correct = row["Korean meaning"]
-                    w_rows = df[df["Word"] != st.session_state.b_word].sample(3)
-                    opts = list(w_rows["Korean meaning"].values) + [st.session_state.b_correct]
+                    st.session_state.b_word = row[word_col]
+                    st.session_state.b_correct = row[meaning_col]
+                    w_rows = df[df[word_col] != st.session_state.b_word].sample(3)
+                    opts = list(w_rows[meaning_col].values) + [st.session_state.b_correct]
                     random.shuffle(opts)
                     st.session_state.b_opts = opts
 
