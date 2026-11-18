@@ -48,7 +48,6 @@ if df is not None:
         st.subheader("📊 데이터 현황 및 전체 단어 보기")
         st.write(f"현재 연동된 전체 학습 단어 수: **{len(df)}개**의 교육과정 기초어휘")
         
-        # 전체 단어 보기 토글 기능
         if st.checkbox("📖 전체 단어장 목록 펼쳐보기 (3,000 단어)"):
             st.markdown("### 📋 전체 단어 리스트")
             st.dataframe(df[[word_col, meaning_col]].rename(columns={word_col: "영단어 (Word)", meaning_col: "뜻 (Meaning)"}), use_container_width=True)
@@ -88,7 +87,6 @@ if df is not None:
             st.session_state.show_meaning = False
             st.rerun()
 
-        # 플래시카드 메뉴에서도 전체 단어 볼 수 있도록 추가
         st.markdown("---")
         if st.checkbox("📖 전체 단어장 목록 보기 (플래시카드 하단)"):
             st.dataframe(df[[word_col, meaning_col]].rename(columns={word_col: "영단어", meaning_col: "뜻"}), use_container_width=True)
@@ -238,9 +236,8 @@ if df is not None:
 
     elif menu == "⏱️ 타임어택 배틀":
         st.header("⏱️ 타임어택 스피드 배틀 게임")
-        st.write("제한 시간 **10초** 안에 정답을 맞혀보세요! 맞힐 때마다 **10초가 다시 충전**되며 다음 문제로 넘어갑니다.")
+        st.write("제한 시간 **10초** 안에 정답을 맞혀보세요! 정답을 맞히면 **10초가 즉시 리셋**되며 다음 문제로 넘어갑니다.")
 
-        # 타임어택 상태 변수 안전하게 초기화
         if "battle_started" not in st.session_state:
             st.session_state.battle_started = False
         if "battle_score" not in st.session_state:
@@ -263,7 +260,6 @@ if df is not None:
             st.session_state.b_q_id += 1
             st.session_state.battle_start_time = time.time()
 
-        # [시작 버튼]이 확실하게 보이도록 명시적 조건 처리
         if not st.session_state.battle_started:
             st.markdown("---")
             if st.button("🚀 타임어택 배틀 시작하기", use_container_width=True):
@@ -303,9 +299,9 @@ if df is not None:
                     reset_battle_question()
                     st.rerun()
                 
-                # 남은 시간 타이머를 실시간으로 갱신하기 위한 버튼
-                if st.button("⏱️ 남은 시간 갱신하기"):
-                    st.rerun()
+                # 버튼을 따로 누르지 않아도 시간이 흐르면서 화면 숫자가 줄어들도록 자동 리프레시 루프 실행
+                time.sleep(1)
+                st.rerun()
             else:
                 st.error("⏰ 10초 시간 초과! 게임이 종료되었습니다.")
                 st.subheader(f"최종 결과: 맞춘 문제 **{st.session_state.battle_score}개** / 총 시도 **{st.session_state.battle_total}개**")
