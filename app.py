@@ -44,8 +44,14 @@ if df is not None:
         st.title("🌟 G1 English Vocabulary App")
         st.write("환영합니다! 중학교 1학년 수준의 3,000개 어휘를 플래시카드와 다양한 퀴즈로 마스터해보세요.")
         st.info("👈 왼쪽 사이드바에서 원하는 학습 단계를 선택하세요!")
-        st.subheader("📊 데이터 현황")
+        
+        st.subheader("📊 데이터 현황 및 전체 단어 보기")
         st.write(f"현재 연동된 전체 학습 단어 수: **{len(df)}개**의 교육과정 기초어휘")
+        
+        # 전체 단어 보기 토글 기능
+        if st.checkbox("📖 전체 단어장 목록 펼쳐보기 (3,000 단어)"):
+            st.markdown("### 📋 전체 단어 리스트")
+            st.dataframe(df[[word_col, meaning_col]].rename(columns={word_col: "영단어 (Word)", meaning_col: "뜻 (Meaning)"}), use_container_width=True)
 
     elif menu == "🃏 플래시카드 학습":
         st.header("🃏 플래시카드 단어 암기")
@@ -82,6 +88,11 @@ if df is not None:
             st.session_state.show_meaning = False
             st.rerun()
 
+        # 플래시카드 메뉴에서도 전체 단어 볼 수 있도록 추가
+        st.markdown("---")
+        if st.checkbox("📖 전체 단어장 목록 보기 (플래시카드 하단)"):
+            st.dataframe(df[[word_col, meaning_col]].rename(columns={word_col: "영단어", meaning_col: "뜻"}), use_container_width=True)
+
     elif menu == "❓ 객관식 퀴즈":
         st.header("❓ 객관식 퀴즈 (영단어 ➔ 뜻)")
         st.write("제시된 영단어를 보고 알맞은 뜻을 보기에서 고르세요.")
@@ -108,7 +119,6 @@ if df is not None:
         st.markdown(f"### Q. 다음 영단어의 뜻은 무엇일까요?\n# **{st.session_state.q_word}**")
         choice = st.radio("보기를 선택하세요:", st.session_state.q_options, key="quiz_radio", disabled=st.session_state.q_solved)
 
-        # 피드백 메시지 화면에 유지하기
         if st.session_state.q_feedback:
             ftype, fmsg = st.session_state.q_feedback
             if ftype == "success":
@@ -180,14 +190,12 @@ if df is not None:
         if st.checkbox("💡 첫 글자 힌트 보기"):
             st.info(f"힌트: {st.session_state.subj_hint}")
 
-        # 문제 번호(subj_q_id)를 key에 넣어 다음 문제로 갈 때 입력창이 자동으로 깨끗하게 비워지도록 처리
         user_input = st.text_input(
             "영단어 철자를 소문자로 입력하세요:", 
             key=f"user_subj_input_{st.session_state.subj_q_id}",
             disabled=st.session_state.subj_solved
         )
 
-        # 피드백 메시지 화면에 유지하기
         if st.session_state.subj_feedback:
             ftype, fmsg = st.session_state.subj_feedback
             if ftype == "success":
@@ -230,14 +238,79 @@ if df is not None:
 
     elif menu == "⏱️ 타임어택 배틀":
         st.header("⏱️ 타임어택 스피드 배틀 게임")
-        st.write("제한 시간 10초 안에 맞히세요! 정답을 맞히면 **다음 문제로 넘어가며 10초가 다시 충전**됩니다!")
+        st.write("제한 시간 **10초** 안에 정답을 맞혀보세요! 맞힐 때마다 **10초가 다시 충전**되며 다음 문제로 넘어갑니다.")
 
-        if "battle_active" not in st.session_state:
-            st.session_state.battle_active = False
+        # 타임어택 상태 변수 안전하게 초기화
+        if "battle_started" not in st.session_state:
+            st.session_state.battle_started = False
+        if "battle_score" not in st.session_state:
             st.session_state.battle_score = 0
+        if "battle_total" not in st.session_state:
             st.session_state.battle_total = 0
+        if "b_q_id" not in st.session_state:
             st.session_state.b_q_id = 0
+        if "b_last_msg" not in st.session_state:
             st.session_state.b_last_msg = None
 
-        def next_battle_question():
-            row = df.sample
+        def reset_battle_question():
+            row = df.sample(1).iloc[0]
+            st.session_state.b_word = str(row[word_col]).strip()
+            st.session_state.b_correct = str(row[meaning_col]).strip()
+            w_rows = df[df[word_col] != st.session_state.b_word].sample(3)
+            opts = list(w_rows[meaning_col].values) + [st.session_state.b_correct]
+            random.shuffle(opts)
+            st.session_state.b_opts = opts
+            st.session_state.b_q_id += 1
+            st.session_state.battle_start_time = time.time()
+
+        # [시작 버튼]이 확실하게 보이도록 명시적 조건 처리
+        if not st.session_state.battle_started:
+            st.markdown("---")
+            if st.button("🚀 타임어택 배틀 시작하기", use_container_width=True):
+                st.session_state.battle_started = True
+                st.session_state.battle_score = 0
+                st.session_state.battle_total = 0
+                st.session_state.b_last_msg = None
+                reset_battle_question()
+                st.rerun()
+        else:
+            elapsed = time.time() - st.session_state.battle_start_time
+            remaining = 10 - int(elapsed)
+
+            if remaining > 0:
+                col1, col2 = st.columns(2)
+                col1.metric(label="⏳ 남은 시간", value=f"{remaining}초")
+                col2.metric(label="🏆 현재 점수", value=f"{st.session_state.battle_score}점 (푼 문제: {st.session_state.battle_total})")
+
+                if st.session_state.b_last_msg:
+                    mtype, mtext = st.session_state.b_last_msg
+                    if mtype == "success":
+                        st.success(mtext)
+                    else:
+                        st.error(mtext)
+
+                st.markdown(f"### 단어: **{st.session_state.b_word}**")
+                ans = st.radio("뜻을 고르세요:", st.session_state.b_opts, key=f"battle_radio_{st.session_state.b_q_id}")
+
+                if st.button("정답 제출", key=f"battle_submit_{st.session_state.b_q_id}"):
+                    st.session_state.battle_total += 1
+                    if ans == st.session_state.b_correct:
+                        st.session_state.battle_score += 1
+                        st.session_state.b_last_msg = ("success", f"⭕ 정답! (+1점) — 10초가 리셋되었습니다!")
+                    else:
+                        st.session_state.b_last_msg = ("error", f"❌ 오답! 정답은 '{st.session_state.b_correct}' 였습니다.")
+                    
+                    reset_battle_question()
+                    st.rerun()
+                
+                # 남은 시간 타이머를 실시간으로 갱신하기 위한 버튼
+                if st.button("⏱️ 남은 시간 갱신하기"):
+                    st.rerun()
+            else:
+                st.error("⏰ 10초 시간 초과! 게임이 종료되었습니다.")
+                st.subheader(f"최종 결과: 맞춘 문제 **{st.session_state.battle_score}개** / 총 시도 **{st.session_state.battle_total}개**")
+                if st.button("🔄 다시 도전하기"):
+                    st.session_state.battle_started = False
+                    st.rerun()
+else:
+    st.warning("데이터를 로드할 수 없습니다.")
