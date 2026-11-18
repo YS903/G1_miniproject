@@ -132,4 +132,186 @@ if df is not None:
                     st.session_state.q_total += 1
                     st.session_state.q_correct_cnt += 1
                     st.session_state.q_solved = True
-                    st.session_state.q_feedback = ("success", f"🎉 정답입니다! 훌륭해요 👏 (**{st.session_state.q_word}**
+                    st.session_state.q_feedback = ("success", f"🎉 정답입니다! 훌륭해요 👏 (**{st.session_state.q_word}** = {st.session_state.q_correct})")
+                    st.rerun()
+                else:
+                    if not st.session_state.q_retry:
+                        st.session_state.q_retry = True
+                        st.session_state.q_feedback = ("warning", "⚠️ 틀렸습니다! 다시 한 번 잘 생각해보세요. (기회 1번 더!)")
+                        st.rerun()
+                    else:
+                        st.session_state.q_total += 1
+                        st.session_state.q_solved = True
+                        st.session_state.q_feedback = ("error", f"❌ 아쉽습니다. 정답은 **{st.session_state.q_correct}** 입니다.")
+                        st.rerun()
+        else:
+            if st.button("➡️ 다음 문제 풀기"):
+                st.session_state.q_retry = False
+                st.session_state.q_solved = False
+                st.session_state.q_feedback = None
+                correct_row = df.sample(1).iloc[0]
+                st.session_state.q_word = str(correct_row[word_col]).strip()
+                st.session_state.q_correct = str(correct_row[meaning_col]).strip()
+                wrong_rows = df[df[word_col] != st.session_state.q_word].sample(3)
+                options = list(wrong_rows[meaning_col].values) + [st.session_state.q_correct]
+                random.shuffle(options)
+                st.session_state.q_options = options
+                st.rerun()
+
+    elif menu == "✍️ 서술형 스펠링 테스트":
+        st.header("✍️ 서술형 스펠링 테스트 (뜻 ➔ 영단어)")
+        st.write("제시된 한국어 뜻을 보고 올바른 영단어 철자를 직접 입력해 보세요.")
+
+        if "subj_total" not in st.session_state:
+            st.session_state.subj_total = 0
+            st.session_state.subj_correct_cnt = 0
+            st.session_state.subj_retry = False
+            st.session_state.subj_solved = False
+            st.session_state.subj_feedback = None
+            st.session_state.subj_q_id = 0
+
+        if "subj_word" not in st.session_state:
+            rand_row = df.sample(1).iloc[0]
+            st.session_state.subj_word = str(rand_row[word_col]).strip()
+            st.session_state.subj_meaning = str(rand_row[meaning_col]).strip()
+            w = st.session_state.subj_word
+            st.session_state.subj_hint = w[0] + " _ " * (len(w) - 1)
+
+        target_word = st.session_state.subj_word
+        target_meaning = st.session_state.subj_meaning
+
+        st.markdown(f"📊 **진행도: 맞춘 문제 {st.session_state.subj_correct_cnt}개 / 총 푼 문제 {st.session_state.subj_total}개**")
+        st.markdown("---")
+
+        st.markdown(f"### 뜻: **{target_meaning}**")
+        
+        if st.checkbox("💡 첫 글자 힌트 보기"):
+            st.info(f"힌트: {st.session_state.subj_hint}")
+
+        user_input = st.text_input(
+            "영단어 철자를 소문자로 입력하세요:", 
+            key=f"user_subj_input_{st.session_state.subj_q_id}",
+            disabled=st.session_state.subj_solved
+        )
+
+        if st.session_state.subj_feedback:
+            ftype, fmsg = st.session_state.subj_feedback
+            if ftype == "success":
+                st.success(fmsg)
+            elif ftype == "warning":
+                st.warning(fmsg)
+            elif ftype == "error":
+                st.error(fmsg)
+
+        if not st.session_state.subj_solved:
+            if st.button("정답 확인하기"):
+                if user_input.strip().lower() == target_word.lower():
+                    st.session_state.subj_total += 1
+                    st.session_state.subj_correct_cnt += 1
+                    st.session_state.subj_solved = True
+                    st.session_state.subj_feedback = ("success", f"🎉 정답입니다! 단어: **{target_word}** ({target_meaning})")
+                    st.rerun()
+                else:
+                    if not st.session_state.subj_retry:
+                        st.session_state.subj_retry = True
+                        st.session_state.subj_feedback = ("warning", "⚠️ 틀렸습니다! 다시 한 번 철자를 꼼꼼히 생각해보세요. (기회 1번 더!)")
+                        st.rerun()
+                    else:
+                        st.session_state.subj_total += 1
+                        st.session_state.subj_solved = True
+                        st.session_state.subj_feedback = ("error", f"❌ 아쉽습니다. 정답은 **{target_word}** 입니다.")
+                        st.rerun()
+        else:
+            if st.button("➡️ 다음 문제 풀기"):
+                st.session_state.subj_retry = False
+                st.session_state.subj_solved = False
+                st.session_state.subj_feedback = None
+                st.session_state.subj_q_id += 1
+                rand_row = df.sample(1).iloc[0]
+                st.session_state.subj_word = str(rand_row[word_col]).strip()
+                st.session_state.subj_meaning = str(rand_row[meaning_col]).strip()
+                w = st.session_state.subj_word
+                st.session_state.subj_hint = w[0] + " _ " * (len(w) - 1)
+                st.rerun()
+
+    elif menu == "⏱️ 타임어택 배틀":
+        st.header("⏱️ 타임어택 스피드 배틀 게임")
+        st.write("제한 시간 **10초** 안에 정답을 맞히세요! 맞히면 10초가 리셋되지만, **틀리면 곧바로 게임이 종료**됩니다!")
+
+        if "battle_started" not in st.session_state:
+            st.session_state.battle_started = False
+        if "battle_score" not in st.session_state:
+            st.session_state.battle_score = 0
+        if "battle_total" not in st.session_state:
+            st.session_state.battle_total = 0
+        if "b_q_id" not in st.session_state:
+            st.session_state.b_q_id = 0
+        if "battle_game_over" not in st.session_state:
+            st.session_state.battle_game_over = False
+        if "battle_fail_reason" not in st.session_state:
+            st.session_state.battle_fail_reason = ""
+
+        def reset_battle_question():
+            row = df.sample(1).iloc[0]
+            st.session_state.b_word = str(row[word_col]).strip()
+            st.session_state.b_correct = str(row[meaning_col]).strip()
+            w_rows = df[df[word_col] != st.session_state.b_word].sample(3)
+            opts = list(w_rows[meaning_col].values) + [st.session_state.b_correct]
+            random.shuffle(opts)
+            st.session_state.b_opts = opts
+            st.session_state.b_q_id += 1
+            st.session_state.battle_start_time = time.time()
+
+        if not st.session_state.battle_started:
+            st.markdown("---")
+            if st.button("🚀 타임어택 배틀 시작하기", use_container_width=True):
+                st.session_state.battle_started = True
+                st.session_state.battle_score = 0
+                st.session_state.battle_total = 0
+                st.session_state.battle_game_over = False
+                st.session_state.battle_fail_reason = ""
+                reset_battle_question()
+                st.rerun()
+        else:
+            if st.session_state.battle_game_over:
+                if st.session_state.battle_fail_reason == "timeout":
+                    st.error("⏰ 10초 시간 초과! 게임이 종료되었습니다.")
+                else:
+                    st.error(f"❌ 오답입니다! 게임이 즉시 종료되었습니다. (정답은 '{st.session_state.b_correct}' 였습니다)")
+                
+                st.subheader(f"최종 결과: 맞춘 문제 **{st.session_state.battle_score}개** / 총 시도 **{st.session_state.battle_total}개**")
+                if st.button("🔄 다시 도전하기"):
+                    st.session_state.battle_started = False
+                    st.session_state.battle_game_over = False
+                    st.rerun()
+            else:
+                elapsed = time.time() - st.session_state.battle_start_time
+                remaining = 10 - int(elapsed)
+
+                if remaining > 0:
+                    col1, col2 = st.columns(2)
+                    col1.metric(label="⏳ 남은 시간", value=f"{remaining}초")
+                    col2.metric(label="🏆 현재 점수", value=f"{st.session_state.battle_score}점")
+
+                    st.markdown(f"### 단어: **{st.session_state.b_word}**")
+                    ans = st.radio("뜻을 고르세요:", st.session_state.b_opts, key=f"battle_radio_{st.session_state.b_q_id}")
+
+                    if st.button("정답 제출", key=f"battle_submit_{st.session_state.b_q_id}"):
+                        st.session_state.battle_total += 1
+                        if ans == st.session_state.b_correct:
+                            st.session_state.battle_score += 1
+                            reset_battle_question()
+                            st.rerun()
+                        else:
+                            st.session_state.battle_game_over = True
+                            st.session_state.battle_fail_reason = "wrong"
+                            st.rerun()
+                    
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.session_state.battle_game_over = True
+                    st.session_state.battle_fail_reason = "timeout"
+                    st.rerun()
+else:
+    st.warning("데이터를 로드할 수 없습니다.")
